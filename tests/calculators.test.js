@@ -1,0 +1,11 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {winding,splice,runtime,material,estimate,taper} from '../js/calculators.js';
+const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8,`${a} != ${b}`);
+test('winding conserves cross-sectional area and rounds repeats',()=>{const r=winding({core:3,caliper:.005,quantity:101,pitch:4,lanes:2,factor:1});assert.equal(r.repeats,51);near(Math.PI*(r.diameter**2-9)/4,204*.005);});
+test('splicing excludes duplicate cores',()=>{near(splice({core:3,diameters:[5,5]}).diameter,Math.sqrt(41));assert.throws(()=>splice({core:6,diameters:[5,7]}));});
+test('runtime explicitly uses frames and web advance',()=>{const r=runtime({frames:120,repeat:12,speed:60,setup:10});assert.equal(r.minutes,12);});
+const job={web:13,width:3,gap:.125,trim:.125,pitch:4,quantity:1001,waste:10,setup:100};
+test('material includes lanes, whole repeats and fixed setup',()=>{const r=material(job);assert.equal(r.lanes,4);assert.equal(r.repeats,251);assert.equal(r.overrun,3);near(r.feet,251*4/12*1.1+100);});
+test('cost components reconcile with total and unit cost',()=>{const r=estimate({...job,speed:100,stock:1,laminate:.5,hourly:60,click:.01,colors:4,setupMinutes:10});near(r.total,r.stock+r.laminate+r.press+r.click);near(r.unit*job.quantity,r.total);});
+test('taper endpoints match input definition',()=>{const r=taper({core:3,finish:12,initial:8,percent:25});assert.equal(r.end,6);assert.equal(r.points[0].tension,8);assert.equal(r.points[5].tension,6);});
+test('rejects negative, missing, nonfinite and fractional counts',()=>{assert.throws(()=>runtime({frames:-1,repeat:12,speed:98,setup:0}));assert.throws(()=>material({...job,width:14}));assert.throws(()=>winding({core:3,caliper:NaN,quantity:2,pitch:4,lanes:1,factor:1}));assert.throws(()=>material({...job,quantity:1.5}));assert.throws(()=>taper({core:3,finish:12,initial:8,percent:101}));assert.throws(()=>runtime({frames:10,repeat:12,speed:Infinity,setup:0}));});
+test('equivalent metric measurements yield identical geometry',()=>{const metric={core:82.55,caliper:.13716,pitch:104.775};near(winding({core:metric.core/25.4,caliper:metric.caliper/25.4,pitch:metric.pitch/25.4,quantity:10000,lanes:1,factor:1.05}).diameter,winding({core:3.25,caliper:.0054,pitch:4.125,quantity:10000,lanes:1,factor:1.05}).diameter);});

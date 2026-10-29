@@ -1,0 +1,1 @@
+{"version":"0.2.0","configurations":[{"name":"Preview SpliceRoll","type":"node","request":"launch","program":"${workspaceFolder}/server.js","console":"integratedTerminal","serverReadyAction":{"pattern":"SpliceRoll: (https?://[^\\s]+)","uriFormat":"%s","action":"openExternally"}}]}
